@@ -120,66 +120,80 @@ HTML;
 
 	private function handleUpload()
 	{
-		$tempDir = wfTempDir() . '/ConvertPDF_' . md5($_FILES['PDFFile']['tmp_name']) . '/';
-		$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']);
-		
-		$this->setSessionData('ConvertPDF_tempDir', $tempDir);
+		if (!empty($_POST['PDFURL'])) {
+
+			// Case with a remote PDF
+			$url = $_POST['PDFURL'];
+
+			$tempDir = $this->createTempDir($url);
+			$tempRootFilename = $tempDir . sha1_file($url);
+
+			$urlParts = parse_url($url);
+			
+			copy($url, $tempRootFilename);
+
+			// Keep the filename in case we need it for the page title
+			$this->setSessionData('ConvertPDF_originalPDFFilename', basename($urlParts['path']));
+			$this->setSessionData('ConvertPDF_originalPDFURL', $url);	
+			
+		} else if (!empty($_FILES['PDFFile']['tmp_name'])) {
+
+			// Case with a local file upload
+			$tempDir = $this->createTempDir($_FILES['PDFFile']['tmp_name']);
+			$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']);
+	
+			// Undefined | Multiple Files | $_FILES Corruption Attack
+			// If this request falls under any of them, treat it invalid.
+			if ( !isset($_FILES['PDFFile']['error']) ||
+				is_array($_FILES['PDFFile']['error']) ) {
+				throw new RuntimeException('Invalid parameters.');
+			}
+	
+			// Check $_FILES['PDFFile']['error'] value.
+			switch ($_FILES['PDFFile']['error']) {
+				case UPLOAD_ERR_OK:
+					break;
+				case UPLOAD_ERR_NO_FILE:
+					throw new RuntimeException('No file sent.');
+				case UPLOAD_ERR_INI_SIZE:
+				case UPLOAD_ERR_FORM_SIZE:
+					throw new RuntimeException('Exceeded filesize limit.');
+				default:
+					throw new RuntimeException('Unknown errors.');
+			}
+	
+			// You should also check filesize here. 
+			if ($_FILES['PDFFile']['size'] > 1000000) {
+				throw new RuntimeException('Exceeded filesize limit.');
+			}
+	
+			// DO NOT TRUST $_FILES['PDFFile']['mime'] VALUE !!
+			// Check MIME Type by yourself.
+			$finfo = new finfo(FILEINFO_MIME_TYPE);
+			if (false === $ext = array_search(
+				$finfo->file($_FILES['PDFFile']['tmp_name']),
+				array(
+					'pdf' => 'application/pdf',
+				),
+				true
+			)) {
+				throw new RuntimeException('Invalid file format.');
+			}
+	
+			// You should name it uniquely.
+			// DO NOT USE $_FILES['PDFFile']['name'] WITHOUT ANY VALIDATION !!
+			// On this example, obtain safe unique name from its binary data.
+			if (!move_uploaded_file( $_FILES['PDFFile']['tmp_name'], $tempRootFilename )) {
+				throw new RuntimeException('Failed to move uploaded file.');
+			}
+	
+			// Keep the filename in case we need it for the page title
+			$this->setSessionData('ConvertPDF_originalPDFFilename', $_FILES['PDFFile']['name']);
+			$this->setSessionData('ConvertPDF_originalPDFURL', $_FILES['PDFFile']['name']);	
+		}
+			
 		$this->setSessionData('ConvertPDF_tempRootFilename', $tempRootFilename);
 		
-		if (!@mkdir($tempDir)) {
-			$error = error_get_last();
-			throw new RuntimeException($error['message']);
-		}
-
-		// Undefined | Multiple Files | $_FILES Corruption Attack
-		// If this request falls under any of them, treat it invalid.
-		if ( !isset($_FILES['PDFFile']['error']) ||
-			is_array($_FILES['PDFFile']['error']) ) {
-			throw new RuntimeException('Invalid parameters.');
-		}
-
-		// Check $_FILES['PDFFile']['error'] value.
-		switch ($_FILES['PDFFile']['error']) {
-			case UPLOAD_ERR_OK:
-				break;
-			case UPLOAD_ERR_NO_FILE:
-				throw new RuntimeException('No file sent.');
-			case UPLOAD_ERR_INI_SIZE:
-			case UPLOAD_ERR_FORM_SIZE:
-				throw new RuntimeException('Exceeded filesize limit.');
-			default:
-				throw new RuntimeException('Unknown errors.');
-		}
-
-		// You should also check filesize here. 
-		if ($_FILES['PDFFile']['size'] > 1000000) {
-			throw new RuntimeException('Exceeded filesize limit.');
-		}
-
-		// DO NOT TRUST $_FILES['PDFFile']['mime'] VALUE !!
-		// Check MIME Type by yourself.
-		$finfo = new finfo(FILEINFO_MIME_TYPE);
-		if (false === $ext = array_search(
-			$finfo->file($_FILES['PDFFile']['tmp_name']),
-			array(
-				'pdf' => 'application/pdf',
-			),
-			true
-		)) {
-			throw new RuntimeException('Invalid file format.');
-		}
-
-		// You should name it uniquely.
-		// DO NOT USE $_FILES['PDFFile']['name'] WITHOUT ANY VALIDATION !!
-		// On this example, obtain safe unique name from its binary data.
-		if (!move_uploaded_file( $_FILES['PDFFile']['tmp_name'], $tempRootFilename )) {
-			throw new RuntimeException('Failed to move uploaded file.');
-		}
-
-		// Keep the filename in case we need it for the page title
-		$this->setSessionData('ConvertPDF_originalPDFFilename', $_FILES['PDFFile']['name']);
-		$this->setSessionData('ConvertPDF_originalPDFURL', $_FILES['PDFFile']['name']);
-
 		return true;	
 	}
 
@@ -362,8 +376,14 @@ HTML;
 	}
 
 	private function cleanUp() {
-		// wfRecursiveRemoveDir()
+		$tempDir = $this->getSessionData('ConvertPDF_tempDir');
+		$visibleTempFolder = $GLOBALS['wgUploadDirectory'] . '/' . basename($tempDir);
 
+		wfRecursiveRemoveDir($visibleTempFolder);
+		wfRecursiveRemoveDir($tempDir);
+
+		$tempDir = $this->getSessionData('ConvertPDF_tempDir');
+		wfRecursiveRemoveDir($tempDir);
 
 		if (empty($this->session))
 			$this->session = $this->getRequest()->getSession();
@@ -505,7 +525,6 @@ HTML;
 				throw new Exception("failed. (at recordUpload stage)", 1);
 			}
 		}
-
 	}
 
 	private function getNewFormToken($sub) {
@@ -552,5 +571,19 @@ HTML;
 			$this->session = $this->getRequest()->getSession();
 		
 		return $this->session->exists( $key );
+	}
+
+	private function createTempDir($originalFilename) {
+
+		$tempDir = wfTempDir() . '/ConvertPDF_' . md5($originalFilename) . '/';
+
+		if (!@mkdir($tempDir)) {
+			$error = error_get_last();
+			throw new RuntimeException($error['message']);
+		}		
+
+		$this->setSessionData('ConvertPDF_tempDir', $tempDir);
+
+		return $tempDir;
 	}
 }
