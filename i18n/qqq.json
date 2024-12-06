@@ -1,0 +1,14 @@
+{
+    "@metadata": {
+        "authors": [
+            "Bertrand Gorge"
+        ]
+    },
+    "convertPDF2Wiki": "The name of the extension",
+    "convertPDF2Wiki-desc": "{{desc|name=ConvertPDF2Wiki|url=https://www.mediawiki.org/wiki/Extension:ConvertPDF2Wiki}}",
+    "special-importPDF-title": "Title of the special page Special:Import_PDF",
+    "special-importPDF-intro": "Description appearing on top of <tvar|1>Special:{{ll|Import_PDF}}</>.",
+    "special-importPDF-error": "Error while uploading the file",
+    "special-importPDF-uploaderror": "$1",
+    "special-importPDF-invalidtoken": "Invalid form token. Please restart the whole process"
+}

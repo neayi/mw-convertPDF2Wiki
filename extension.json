@@ -1,0 +1,23 @@
+{
+    "name": "ConvertPDF2Wiki",
+    "author": "Bertrand Gorge",
+    "url": "https://www.mediawiki.org/wiki/Extension:ConvertPDF2Wiki",
+    "license-name": "GPL-2.0+",
+    "version": "0.0.0",
+    "namemsg": "convertPDF2Wiki",
+    "descriptionmsg": "convertPDF2Wiki-desc",
+    "manifest_version": 1,
+    "MessagesDirs": {
+        "ConvertPDF2Wiki": [ "i18n" ]
+    },
+    "AutoloadClasses": {
+        "SpecialImport_PDF": "specials/SpecialImport_PDF.php"
+    },
+    "SpecialPages": {
+        "Import_PDF": "SpecialImport_PDF"
+    },
+    "ExtensionMessagesFiles": {
+        "ConvertPDF2WikiAlias": "ConvertPDF2Wiki.alias.php"
+    },
+    "type": "other"
+}

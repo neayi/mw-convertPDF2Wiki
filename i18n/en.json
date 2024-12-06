@@ -1,0 +1,14 @@
+{
+    "@metadata": {
+        "authors": [
+            "Bertrand Gorge"
+        ]
+    },
+    "convertPDF2Wiki": "Convert PDF to wiki",
+    "convertPDF2Wiki-desc": "An extension that allows a PDF to be imported as a Wiki page, extracting images and text as much as possible",
+    "special-importPDF-title": "Import PDF",
+    "special-importPDF-intro": "Import a PDF file into a wiki page",
+    "special-importPDF-error": "Error while uploading the file",
+    "special-importPDF-uploaderror": "$1",
+    "special-importPDF-invalidtoken": "Invalid form token. Please restart the whole process"
+}
