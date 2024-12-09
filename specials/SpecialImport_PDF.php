@@ -34,7 +34,6 @@ class SpecialImport_PDF extends SpecialPage
 		//		$out->addHelpLink( 'How to become a MediaWiki hacker' );
 		//		$out->addWikiMsg( 'special-importPDF-intro' );
 
-
 		$html = '';
 
 		if (!empty($sub) && !$this->checkFormToken($sub)) {
@@ -209,16 +208,18 @@ HTML;
 		$formToken = $this->getNewFormToken('Choose_title');
 
 		// Get all the files with a name of the form: a5bf01512354aeb5b8b7cfc0aec0e86e95145e7d-2_9.jpg
-		$images = glob($tempRootFilename . '*');
-		$imagesToKeep = [];
+		$images = glob($tempRootFilename . '-*');
+		$imagesToChooseFrom = [];
 		foreach ($images as $anImage) {
 			$finfo = new finfo(FILEINFO_MIME_TYPE);
 			if (array_search($finfo->file($anImage), ['image/gif', 'image/jpe', 'image/jpg', 'image/jpeg', 'image/png', 'image/svg+xml'], true)) {
 				copy($anImage, $visibleTempFolder . '/' . basename($anImage));
-				$imagesToKeep[] = basename($anImage);
+				$imagesToChooseFrom[] = basename($anImage);
 			}
 		}
 		
+		$tempDir = $this->setSessionData('ConvertPDF_imagesToChooseFrom', $imagesToChooseFrom);
+
 		$html = <<<HTML
 <style>
 .imageFromPDF {
@@ -236,7 +237,7 @@ Please select the images you want to keep:
 HTML;
 
 
-		foreach ($imagesToKeep as $anImage) {
+		foreach ($imagesToChooseFrom as $anImage) {
 			$imageURL = $visibleTempPath . '/' . $anImage;
 			$anImageMD5 = md5($anImage);
 
@@ -248,7 +249,7 @@ HTML;
 				</label></div>
 				<div class="text-center">
 					<input type="checkbox" name="{$anImageMD5}" id="{$anImage}_id" checked>
-					<a href="#" class="btn btn-primary btn-sm" role="button"><i class="fas fa-undo"></i></a>
+					<a href="#" class="rotate_image btn btn-primary btn-sm" role="button"><i class="fas fa-undo text-white"></i></a>
 				</div>
 			</div>
 HTML;
@@ -258,6 +259,36 @@ HTML;
 		<div class="text-right">
 			<button type="submit" class="btn btn-primary">Submit</button>
 		</div></form>	
+<script>
+		(function () {
+
+			setTimeout(() => {
+
+				$(".rotate_image").on('click', function() {
+				let image = $( this ).parent().parent().find( 'img' );
+
+				let imageFile = image.attr('src');;
+
+				console.log( imageFile );
+
+				var api = new mw.Api();
+				api.get( {
+					'action': 'rotateimagefrompdf',
+					'image': imageFile
+				} )
+				.done( function ( data ) {
+					if (data['rotateimagefrompdf']['success'] == 'success') {
+						d = new Date();
+						image.attr('src', imageFile + "?" + d.getTime());
+					}
+				} );
+			});
+
+			}, "1500"); // wait a second or two for jquery to be loaded
+			
+		}());
+</script>
+
 HTML;
 
 		return $html;
@@ -270,13 +301,12 @@ HTML;
 		$imagesToKeep = [];
 		$imagesToRemove = [];
 		
-		// Get all the files with a name of the form: a5bf01512354aeb5b8b7cfc0aec0e86e95145e7d-2_9.jpg
-		$tempRootFilename = $this->getSessionData('ConvertPDF_tempRootFilename');
-		$images = glob($tempRootFilename . '*');
-		
-		foreach ($images as $anImage) {
-			$imageName = basename($anImage);
+		$imagesToChooseFrom = $this->getSessionData('ConvertPDF_imagesToChooseFrom');
+	
+		foreach ($imagesToChooseFrom as $imageName) {
+
 			$anImageMD5 = md5($imageName);
+
 			if (isset($_POST[$anImageMD5]))
 				$imagesToKeep[] = $imageName;
 			else
@@ -335,7 +365,7 @@ HTML;
 			$wikiCode = str_replace($imageFile, $newImageName, $wikiCode);
 
 			// Also add the image at the bottom, just in case :
-			$wikiCode .= "\n{{Image | Image = $newImageName | Alignement = Right}}\n";
+			$wikiCode .= "\n[[File:$newImageName]]\n";
 		}
 		
 		// Remove image tags that are associated with images we didn't keep
@@ -343,6 +373,10 @@ HTML;
 		foreach ($imagesToRemove as $imageFile) {
 			$wikiCode = preg_replace('@\[\[File:'.preg_quote($imageFile).'[^]]*\]\]@', '', $wikiCode);
 		}
+
+		// Also remove background images
+		$tempRootFilename = $this->getSessionData('ConvertPDF_tempRootFilename');
+		$wikiCode = preg_replace('@\[\[File:'.preg_quote(basename($tempRootFilename)).'[0-9]{3}\.png[^]]*\]\]@', '', $wikiCode);
 
 		// Eventually, add the original URL at the bottom of the page too: 
 		$wikiCode .= "\nOriginal source: " . $this->getSessionData('ConvertPDF_originalPDFURL');
@@ -400,6 +434,7 @@ HTML;
 		$this->session->remove('ConvertPDF_form_tokenChoose_title');
 		$this->session->remove('ConvertPDF_form_tokenConfirm');
 		$this->session->remove('ConvertPDF_htmlFilename');
+		$this->session->remove('ConvertPDF_imagesToChooseFrom');
 		$this->session->remove('ConvertPDF_imagesToKeep');
 		$this->session->remove('ConvertPDF_imagesToRemove');
 		$this->session->remove('ConvertPDF_imagesToUpload');
@@ -477,7 +512,8 @@ HTML;
 	}
 
 	private function importImages() {
-		$tempDir = $this->getSessionData('ConvertPDF_tempDir');
+		$tempDir = $this->getSessionData('ConvertPDF_tempDir');		
+		$visibleTempFolder = $GLOBALS['wgUploadDirectory'] . '/' . basename($tempDir);
 
 		$services = MediaWikiServices::getInstance();
 
@@ -485,7 +521,7 @@ HTML;
 
 		foreach ( $imagesToUpload as $imageTitle => $basename ) {
 
-			$imageFile = $tempDir . $basename;
+			$imageFile = $visibleTempFolder . '/' . $basename;
 
 			# Validate a title
 			$title = Title::makeTitleSafe( NS_FILE, $imageTitle );
@@ -510,6 +546,7 @@ HTML;
 			} else {
 				$publishOptions['headers'] = [];
 			}
+
 			$archive = $image->publish( $imageFile, $flags, $publishOptions );
 			if ( !$archive->isGood() ) {
 				throw new Exception($archive->getMessage( false, false, 'en' )->text(), 1);

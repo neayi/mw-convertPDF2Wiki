@@ -10,8 +10,12 @@
     "MessagesDirs": {
         "ConvertPDF2Wiki": [ "i18n" ]
     },
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\ConvertPDF2Wiki\\": "src/"
+	},    
     "AutoloadClasses": {
-        "SpecialImport_PDF": "specials/SpecialImport_PDF.php"
+        "SpecialImport_PDF": "specials/SpecialImport_PDF.php",
+        "RotateImageFromPDF": "src/RotateImageFromPDF.php"
     },
     "SpecialPages": {
         "Import_PDF": "SpecialImport_PDF"
@@ -19,5 +23,16 @@
     "ExtensionMessagesFiles": {
         "ConvertPDF2WikiAlias": "ConvertPDF2Wiki.alias.php"
     },
+	"APIModules": {
+		"rotateimagefrompdf": "MediaWiki\\Extension\\ConvertPDF2Wiki\\RotateImageFromPDF"
+	},
+    "ResourceModules": {
+		"ext.ConvertPDF2Wiki": {
+			"dependencies": [
+				"jquery.ui",
+				"mediawiki.api"
+			]
+		}
+	},
     "type": "other"
 }

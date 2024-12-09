@@ -10,5 +10,9 @@
     "special-importPDF-intro": "Import a PDF file into a wiki page",
     "special-importPDF-error": "Error while uploading the file",
     "special-importPDF-uploaderror": "$1",
-    "special-importPDF-invalidtoken": "Invalid form token. Please restart the whole process"
+    "special-importPDF-invalidtoken": "Invalid form token. Please restart the whole process",
+    "apihelp-rotateimagefrompdf-example": "Rotate an image to the left",
+    "apihelp-rotateimagefrompdf-summary": "This internal API can only be used when importing a PDF with images",
+    "apihelp-rotateimagefrompdf-param-image": "The name of the image to rotate"
+
 }
