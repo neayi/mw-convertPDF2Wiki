@@ -267,33 +267,42 @@ HTML;
 			<button type="submit" class="btn btn-primary">{$submitButton}</button>
 		</div></form>	
 <script>
-		(function () {
+( function () {
 
-			setTimeout(() => {
+	function waitForMWAndJquery(callback) {
+		// Check every 100ms to see if inJump is available
+		var interval = setInterval(function() {
+			if (typeof mw !== 'undefined' && typeof mw.Api === 'function' &&
+				typeof window.jQuery !== 'undefined' ) {
+				clearInterval(interval);  // Stop checking once it's available
+				callback();  // Execute the callback function
+			}
+		}, 100);
+	}
 
-				$(".rotate_image").on('click', function() {
-				let image = $( this ).parent().parent().find( 'img' );
+	waitForMWAndJquery(function() {
+		$(".rotate_image").on('click', function() {
+			let image = $( this ).parent().parent().find( 'img' );
 
-				let imageFile = image.attr('src');;
+			let imageFile = image.attr('src');;
 
-				console.log( imageFile );
+			var api = new mw.Api();
+			api.get( {
+				'action': 'rotateimagefrompdf',
+				'image': imageFile
+			} )
+			.done( function ( data ) {
+				if (data['rotateimagefrompdf']['success'] == 'success') {
+					d = new Date();
+					image.attr('src', imageFile + "?" + d.getTime());
+				}
+			} );
+		});
+	});
 
-				var api = new mw.Api();
-				api.get( {
-					'action': 'rotateimagefrompdf',
-					'image': imageFile
-				} )
-				.done( function ( data ) {
-					if (data['rotateimagefrompdf']['success'] == 'success') {
-						d = new Date();
-						image.attr('src', imageFile + "?" + d.getTime());
-					}
-				} );
-			});
+}() );
 
-			}, "1500"); // wait a second or two for jquery to be loaded
-			
-		}());
+
 </script>
 
 HTML;
