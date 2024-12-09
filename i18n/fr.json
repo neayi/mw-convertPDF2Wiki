@@ -1,0 +1,24 @@
+{
+    "@metadata": {
+        "authors": [
+            "Bertrand Gorge"
+        ]
+    },
+    "import_pdf": "Importer un PDF",
+    "convertPDF2Wiki": "Convertir un PDF en wiki",
+    "convertPDF2Wiki-desc": "Une extension qui permet d'importer un PDF en tant que page Wiki, en extrayant autant d'images et de texte que possible",
+    "special-importPDF-title": "Importer un PDF",
+    "special-importPDF-intro": "Importer un fichier PDF dans une page wiki",
+    "special-importPDF-error": "Erreur lors du téléchargement du fichier",
+    "special-importPDF-uploaderror": "$1",
+    "special-importPDF-invalidtoken": "Jeton de formulaire non valide. Veuillez recommencer tout le processus",
+    "apihelp-rotateimagefrompdf-example": "Faire pivoter une image vers la gauche",
+    "apihelp-rotateimagefrompdf-summary": "Cette API interne ne peut être utilisée que lors de l'importation d'un PDF avec des images",
+    "apihelp-rotateimagefrompdf-param-image": "Le nom de l'image à faire pivoter",
+    "form-select-a-pdf-from-computer": "Sélectionnez un PDF sur votre ordinateur",
+    "form-or-enter-the-url-of-a-pdf-online": "Ou entrez l'URL d'un PDF en ligne :",
+    "form-submit": "Soumettre",
+    "form-please-select-the-images-you-want-to-keep": "Veuillez sélectionner les images que vous souhaitez conserver :",
+    "form-enter-the-title-of-the-page-to-create": "Entrez le titre de la page à créer :",
+    "form-if-the-page-already-exists-the-content-of-the-pdf-will-be-appended-at-its-bottom": "Si la page existe déjà, le contenu du PDF sera ajouté en bas"
+}

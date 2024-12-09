@@ -4,6 +4,7 @@
             "Bertrand Gorge"
         ]
     },
+    "import_pdf": "Import PDF",
     "convertPDF2Wiki": "The name of the extension",
     "convertPDF2Wiki-desc": "{{desc|name=ConvertPDF2Wiki|url=https://www.mediawiki.org/wiki/Extension:ConvertPDF2Wiki}}",
     "special-importPDF-title": "Title of the special page Special:Import_PDF",
@@ -13,5 +14,11 @@
     "special-importPDF-invalidtoken": "Invalid form token. Please restart the whole process",
     "apihelp-RotateImageFromPDF-example": "Rotate an image to the left",
     "apihelp-RotateImageFromPDF-summary": "This internal API can only be used when importing a PDF with images",
-    "apihelp-RotateImageFromPDF-param-image": "The name of the image to rotate"
+    "apihelp-RotateImageFromPDF-param-image": "The name of the image to rotate",
+    "form-select-a-pdf-from-computer": "Select a PDF from your computer",
+    "form-or-enter-the-url-of-a-pdf-online": "Or enter the URL of a PDF online:",
+    "form-submit": "Submit",
+    "form-please-select-the-images-you-want-to-keep": "Please select the images you want to keep:",
+    "form-enter-the-title-of-the-page-to-create": "Enter the title of the page to create:",
+    "form-if-the-page-already-exists-the-content-of-the-pdf-will-be-appended-at-its-bottom": "If the page already exists, the content of the PDF will be appended at its bottom"
 }

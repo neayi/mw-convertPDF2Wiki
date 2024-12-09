@@ -94,23 +94,27 @@ class SpecialImport_PDF extends SpecialPage
 		$formToken = $this->getNewFormToken('');
 		$action = $this->getAction('Select_images');
 
+		$label1 = $this->msg('form-select-a-pdf-from-computer');
+		$label2 = $this->msg('form-or-enter-the-url-of-a-pdf-online');
+		$submitButton = $this->msg('form-submit');
+
 		$html = <<<HTML
 <form method="post" enctype="multipart/form-data" action="{$action}">
     <!-- upload of a single file -->
 	{$formToken}
 
 	<div class="form-group">
-		<label for="PDFFileId">Select a PDF from your computer</label>
+		<label for="PDFFileId">{$label1}</label>
 		<input type="file" class="form-control-file" name="PDFFile" id="PDFFileId">
 	</div>
 
 	<div class="form-group">
-		<label for="PDFURLId">Or enter the URL of a PDF online:</label>
+		<label for="PDFURLId">{$label2}</label>
 		<input type="text" class="form-control" name="PDFURL" id="PDFURLId" placeholder="https://somewebsite.com/some_pdf_file.pdf">
   	</div>
 
     <div class="text-right">
-		<button type="submit" class="btn btn-primary">Submit</button>
+		<button type="submit" class="btn btn-primary">{$submitButton}</button>
 	</div>
 </form>
 HTML;
@@ -200,6 +204,9 @@ HTML;
 		$tempDir = $this->getSessionData('ConvertPDF_tempDir');
 		$tempRootFilename = $this->getSessionData('ConvertPDF_tempRootFilename');
 
+		$label1 = $this->msg('form-please-select-the-images-you-want-to-keep');
+		$submitButton = $this->msg('form-submit');
+
 		$visibleTempFolder = $GLOBALS['wgUploadDirectory'] . '/' . basename($tempDir);
 		mkdir($visibleTempFolder);
 
@@ -232,7 +239,7 @@ HTML;
 
 </style>
 
-Please select the images you want to keep:
+{$label1}
 <form method="post" action="{$action}">{$formToken}<input type="hidden" name="select_images" value="yes">
 HTML;
 
@@ -257,7 +264,7 @@ HTML;
 
 		$html .= <<<HTML
 		<div class="text-right">
-			<button type="submit" class="btn btn-primary">Submit</button>
+			<button type="submit" class="btn btn-primary">{$submitButton}</button>
 		</div></form>	
 <script>
 		(function () {
@@ -390,19 +397,22 @@ HTML;
 		$defaultPageTitle = htmlspecialchars($this->getDocumentTitle());
 		$action = $this->getAction('Confirm');
 		$formToken = $this->getNewFormToken('Confirm');
-
+		$label = $this->msg('form-enter-the-title-of-the-page-to-create');
+		$helpText = $this->msg('form-if-the-page-already-exists-the-content-of-the-pdf-will-be-appended-at-its-bottom');
+		$submitButton = $this->msg('form-submit');
+		
 		$html = <<<HTML
 <form method="post" action="{$action}">
 	{$formToken}
 
 	<div class="form-group">
-		<label for="PDFPageTitleId">Enter the title of the page to create:</label>
+		<label for="PDFPageTitleId">{$label}</label>
 		<input type="text" class="form-control" name="PDFPageTitle" id="PDFPageTitleId" value="{$defaultPageTitle}">
-		<small class="form-text text-muted">If the page already exists, the content of the PDF will be appended at its bottom</small>
+		<small class="form-text text-muted">{$helpText}</small>
   	</div>
 
     <div class="text-right">
-		<button type="submit" class="btn btn-primary">Submit</button>
+		<button type="submit" class="btn btn-primary">{$submitButton}</button>
 	</div>
 </form>
 HTML;
