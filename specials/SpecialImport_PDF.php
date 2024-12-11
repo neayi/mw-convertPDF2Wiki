@@ -363,8 +363,12 @@ HTML;
 	
 		$wikiCode = file_get_contents($htmlFile . ".wiki");
 	
+		// Replace all div tags and all empty span pairs
 		$wikiCode = preg_replace("@</?div[^>]*>@", '', $wikiCode);
 		$wikiCode = preg_replace("@<span[^>]*></span>@", '', $wikiCode);
+		
+		// Replace non breakable spaces (&nbsp;) that might have been added abusively:
+		$wikiCode = str_replace(" ", ' ', $wikiCode);
 
 		// Deal with images:
 		// [[File:a5bf01512354aeb5b8b7cfc0aec0e86e95145e7d002.png|892x1262px|background image]]
