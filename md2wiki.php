@@ -1,6 +1,10 @@
 <?php
 
+error_reporting(E_ALL);
+set_time_limit(0);
+
 $mediawiki = '';
+$markdown = '';
 
 if (isset($_POST['markdown'])) {
     $markdown = $_POST['markdown'];
@@ -18,7 +22,12 @@ function replaceCitations($mediawiki, $citations)
     $remainingCitations = array();
 
     foreach ($matches as $match) {
-        $url = $citations[$match[1]];
+        $url = $citations[$match[1]]['url'];
+        $title = $citations[$match[1]]['title'];
+
+        if (!empty($title))
+            $url = "[$url $title]";
+
         $number = $match[1];
         $count = 0;
         $mediawiki = preg_replace("/" . preg_quote($match[0]) . "/", "<ref name=\"ref_$number\">$url</ref>", $mediawiki, 1, $count);
@@ -40,6 +49,52 @@ function replaceCitations($mediawiki, $citations)
     return $mediawiki;
 }
 
+function getOpenGraphTitleFromURL($url)
+{
+    // Don't parse PDFs:
+    if (preg_match('@\.pdf$@', $url)) {
+        return '';
+    }
+
+    $html = '';
+
+    try {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 7);
+        $html = curl_exec($ch);
+        curl_close($ch);
+    } catch (\Throwable $th) {
+        return '';
+    }
+
+    if (empty($html)) {
+        return '';
+    }
+    
+    $title = '';
+
+    $doc = new DOMDocument();
+    if (!$doc->loadHTML($html)) {
+        return '';
+    }
+
+    $xpath = new DOMXPath($doc);
+
+    $titleNode = $xpath->query('//meta[@property="og:title"]/@content')->item(0);
+    $title = $titleNode ? $titleNode->nodeValue : '';
+
+    if (empty($title)) {
+        $titleNode = $xpath->query('//title')->item(0);
+        $title = $titleNode ? $titleNode->nodeValue : '';
+    }
+
+    $title = trim(str_replace('|', '-', $title));
+    
+    return $title;
+}
+
 function extractCitations(&$markdown)
 {
     $citations = array();
@@ -47,11 +102,10 @@ function extractCitations(&$markdown)
     $pattern = '@^\[([0-9]+)\] ([^\n]+)@m';
     preg_match_all($pattern, $markdown, $matches, PREG_SET_ORDER);
 
-    echo '<pre>';
-    print_r($matches);
-
     foreach ($matches as $match) {
-        $citations[$match[1]] = $match[2];
+        $url = trim($match[2]);
+
+        $citations[$match[1]] = ['url' => $url, 'title' => getOpenGraphTitleFromURL($url)];
     }
 
     $markdown = preg_replace($pattern, '', $markdown);
@@ -87,7 +141,7 @@ function md2mediawiki($md)
 <body>
     <h1>MD2Wiki</h1>
     <form action="md2wiki.php" method="post">
-        <textarea name="markdown" rows="40" cols="80"></textarea>
+        <textarea name="markdown" rows="40" cols="80"><?php echo htmlentities($markdown) ?></textarea>
         <input type="submit" value="Convert">
     </form>
 
