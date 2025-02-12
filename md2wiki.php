@@ -142,7 +142,7 @@ function md2mediawiki($md)
     <h1>MD2Wiki</h1>
     <form action="md2wiki.php" method="post">
         <textarea name="markdown" rows="40" cols="80"><?php echo htmlentities($markdown) ?></textarea>
-        <div style="text-align:center"><input type="submit" value="Convert"></div>
+        <div style="text-align:center; padding: 10px;"><input type="submit" value="Convert"></div>
     </form>
 
     <div style="border: 1px solid; width: 589px; padding: 10px;">
