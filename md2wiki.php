@@ -28,6 +28,10 @@ function replaceCitations($mediawiki, $citations)
         if (!empty($title))
             $url = "[$url $title]";
 
+        if (preg_match('@\.pdf$@', $url)) {
+            $url = $url . " [PDF]";
+        }
+
         $number = $match[1];
         $count = 0;
         $mediawiki = preg_replace("/" . preg_quote($match[0]) . "/", "<ref name=\"ref_$number\">$url</ref>", $mediawiki, 1, $count);
@@ -51,9 +55,13 @@ function replaceCitations($mediawiki, $citations)
 
 function getOpenGraphTitleFromURL($url)
 {
+    $parse = parse_url($url);
+    $domain = $parse['host'];
+    $domain = ' (' . str_replace('www.', '', $domain) . ')';
+
     // Don't parse PDFs:
     if (preg_match('@\.pdf$@', $url)) {
-        return '';
+        return basename($url) . $domain;
     }
 
     $html = '';
@@ -92,7 +100,7 @@ function getOpenGraphTitleFromURL($url)
 
     $title = trim(str_replace('|', '-', $title));
     
-    return $title;
+    return $title . $domain;
 }
 
 function extractCitations(&$markdown)
