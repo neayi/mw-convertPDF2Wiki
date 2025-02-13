@@ -57,7 +57,7 @@ function getOpenGraphTitleFromURL($url)
 {
     $parse = parse_url($url);
     $domain = $parse['host'];
-    $domain = ' (' . str_replace('www.', '', $domain) . ')';
+    $domain = ' (' . preg_replace('@^www[^.]*\.@', '', $domain) . ')';
 
     // Don't parse PDFs:
     if (preg_match('@\.pdf$@', $url)) {
