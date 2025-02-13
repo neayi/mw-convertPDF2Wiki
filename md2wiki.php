@@ -38,7 +38,7 @@ function replaceCitations($mediawiki, $citations)
         }
     }
 
-    $mediawiki .= "\n{{Pages liées}}\n\n== Références ==\n" . implode('', $remainingCitations) . "\n</references>";
+    $mediawiki .= "\n{{Pages liées}}\n\n== Références ==\n" . implode('', $remainingCitations) . "\n<references />";
 
     // Also replace those spans: <span id="conséquences-de-lhydromorphie"></span>
     $mediawiki = preg_replace('@<span id="([^"]+)"></span>@', '', $mediawiki);
