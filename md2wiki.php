@@ -9,8 +9,9 @@ $markdown = '';
 if (isset($_POST['markdown'])) {
     $markdown = $_POST['markdown'];
 
-    $citations = extractCitations($markdown);
-    $mediawiki = md2mediawiki($markdown);
+    $markdownCopy = $markdown;
+    $citations = extractCitations($markdownCopy);
+    $mediawiki = md2mediawiki($markdownCopy);
     $mediawiki = replaceCitations($mediawiki, $citations);
 }
 
@@ -20,26 +21,50 @@ function replaceCitations($mediawiki, $citations)
     preg_match_all($pattern, $mediawiki, $matches, PREG_SET_ORDER);
 
     $remainingCitations = array();
+    $refURLs = [];
 
     foreach ($matches as $match) {
+        $number = $match[1];
         $url = $citations[$match[1]]['url'];
         $title = $citations[$match[1]]['title'];
 
+        $ref = $url;
+
+
         if (!empty($title))
-            $url = "[$url $title]";
+            $ref = "[$url $title]";
 
         if (preg_match('@\.pdf$@', $url)) {
-            $url = $url . " [PDF]";
+            $ref = $ref . " [PDF]";
         }
+                
+        if (isset($refURLs[$url]))
+            $number = $refURLs[$url];
+        else
+            $mediawiki = preg_replace("/" . preg_quote($match[0]) . "/", "<ref name=\"ref_$number\">$ref</ref>", $mediawiki, 1);
 
-        $number = $match[1];
-        $count = 0;
-        $mediawiki = preg_replace("/" . preg_quote($match[0]) . "/", "<ref name=\"ref_$number\">$url</ref>", $mediawiki, 1, $count);
+        $refURLs[$url] = $number;        
+        
         $mediawiki = preg_replace("/" . preg_quote($match[0]) . "/", "<ref name=\"ref_$number\" />", $mediawiki);
+    }
 
-        if ($count == 0) {
-            $remainingCitations[$number] = "\n* " . $url;
+    foreach ($citations as $citation) {
+        $ref = $url = $citation['url'];
+        $title = $citation['title'];
+
+        if (isset($refURLs[$url]))
+            continue;
+        
+        $refURLs[$url] = true;        
+        
+        if (!empty($title))
+            $ref = "[$url $title]";
+
+        if (preg_match('@\.pdf$@', $url)) {
+            $ref = $ref . " [PDF]";
         }
+
+        $remainingCitations[$url] = "\n* " . $ref;
     }
 
     $mediawiki .= "\n{{Pages liées}}\n\n== Références ==\n" . implode('', $remainingCitations) . "\n<references />";
@@ -85,6 +110,9 @@ function getOpenGraphTitleFromURL($url)
     $title = '';
 
     $doc = new DOMDocument();
+    $contentType = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+    $html = str_replace('<head>', "<head>$contentType", $html);
+
     if (!$doc->loadHTML($html)) {
         return '';
     }
@@ -100,6 +128,8 @@ function getOpenGraphTitleFromURL($url)
     }
 
     $title = trim(str_replace('|', '-', $title));
+    $title = str_replace('[', '(', $title);
+    $title = str_replace(']', ')', $title);
     
     return $title . $domain;
 }
@@ -155,7 +185,7 @@ function md2mediawiki($md)
     </form>
 
     <div style="border: 1px solid; width: 589px; padding: 10px;">
-        <pre style="white-space: break-spaces;"><?php echo htmlentities($mediawiki); ?></pre>
+        <textarea style="border: none; width: 100%" name="markdown" rows="40" cols="80"><?php echo htmlentities($mediawiki); ?></textarea>
     </div>
 </body>
 </html>
