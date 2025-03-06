@@ -162,7 +162,7 @@ HTML;
 
 			// Case with a local file upload
 			$tempDir = $this->createTempDir($_FILES['PDFFile']['tmp_name']);
-			$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']) . '/' . sha1_file($_FILES['PDFFile']['tmp_name']);
+			$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']);
 	
 			// Undefined | Multiple Files | $_FILES Corruption Attack
 			// If this request falls under any of them, treat it invalid.
@@ -276,7 +276,7 @@ HTML;
 					<img src="{$imageURL}">
 				</label></div>
 				<div class="text-center">
-					<input type="checkbox" name="{$anImageMD5}" id="{$anImage}_id" checked>
+					<input type="checkbox" name="{$anImageMD5}" id="{$anImage}_id">
 					<a href="#" class="rotate_image btn btn-primary btn-sm" role="button"><i class="fas fa-undo text-white"></i></a>
 				</div>
 			</div>
