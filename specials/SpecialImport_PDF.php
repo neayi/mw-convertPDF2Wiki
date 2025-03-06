@@ -129,11 +129,30 @@ HTML;
 			$url = $_POST['PDFURL'];
 
 			$tempDir = $this->createTempDir($url);
-			$tempRootFilename = $tempDir . sha1_file($url);
+			$tempRootFilename = $tempDir . sha1($url);
 
 			$urlParts = parse_url($url);
 			
-			copy($url, $tempRootFilename);
+			$ch = curl_init($url);
+			$fp = fopen($tempRootFilename, 'wb');
+
+			curl_setopt($ch, CURLOPT_FILE, $fp);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_FAILONERROR, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+			$result = curl_exec($ch);
+
+			if ($result === false) {
+				$error = curl_error($ch);
+				curl_close($ch);
+				fclose($fp);
+				throw new RuntimeException('Failed to download the file from the URL - ' . $error);
+			}
+
+			curl_close($ch);
+			fclose($fp);
 
 			// Keep the filename in case we need it for the page title
 			$this->setSessionData('ConvertPDF_originalPDFFilename', basename($urlParts['path']));
@@ -143,7 +162,7 @@ HTML;
 
 			// Case with a local file upload
 			$tempDir = $this->createTempDir($_FILES['PDFFile']['tmp_name']);
-			$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']);
+			$tempRootFilename = $tempDir . sha1_file($_FILES['PDFFile']['tmp_name']) . '/' . sha1_file($_FILES['PDFFile']['tmp_name']);
 	
 			// Undefined | Multiple Files | $_FILES Corruption Attack
 			// If this request falls under any of them, treat it invalid.
@@ -208,7 +227,9 @@ HTML;
 		$submitButton = $this->msg('form-submit');
 
 		$visibleTempFolder = $GLOBALS['wgUploadDirectory'] . '/' . basename($tempDir);
-		mkdir($visibleTempFolder);
+		if (!is_dir($visibleTempFolder)) {
+			mkdir($visibleTempFolder);
+		}
 
 		$visibleTempPath = $GLOBALS['wgUploadPath'] . '/' . basename($tempDir);
 		$action = $this->getAction('Choose_title');
@@ -637,10 +658,12 @@ HTML;
 
 		$tempDir = wfTempDir() . '/ConvertPDF_' . md5($originalFilename) . '/';
 
-		if (!@mkdir($tempDir)) {
-			$error = error_get_last();
-			throw new RuntimeException($error['message']);
-		}		
+		if (!is_dir($tempDir)) {
+			if (!@mkdir($tempDir)) {
+				$error = error_get_last();
+				throw new RuntimeException($error['message']);
+			}	
+		}
 
 		$this->setSessionData('ConvertPDF_tempDir', $tempDir);
 
