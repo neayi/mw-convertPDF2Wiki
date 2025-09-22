@@ -4,7 +4,7 @@
             "Bertrand Gorge"
         ]
     },
-    "import_pdf": "Importer un PDF",
+    "importpdf": "Importer un PDF",
     "convertPDF2Wiki": "Convertir un PDF en wiki",
     "convertPDF2Wiki-desc": "Une extension qui permet d'importer un PDF en tant que page Wiki, en extrayant autant d'images et de texte que possible",
     "special-importPDF-title": "Importer un PDF",

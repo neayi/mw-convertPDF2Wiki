@@ -4,7 +4,7 @@
             "Bertrand Gorge"
         ]
     },
-    "import_pdf": "Import PDF",
+    "importpdf": "Import PDF",
     "convertPDF2Wiki": "Convert PDF to wiki",
     "convertPDF2Wiki-desc": "An extension that allows a PDF to be imported as a Wiki page, extracting images and text as much as possible",
     "special-importPDF-title": "Import PDF",

@@ -2,7 +2,7 @@
 An extension that allows a PDF to be imported as a Wiki page, extracting images and text as much as possible
 
 # Usage
-This extension adds a special page `Special:Import_PDF` that allows you to upload a PDF file (or to point to the URL of a PDF file somewhere on the web), and then converts the PDF to wiki, creating a new page.
+This extension adds a special page `Special:ImportPDF` that allows you to upload a PDF file (or to point to the URL of a PDF file somewhere on the web), and then converts the PDF to wiki, creating a new page.
 
 The process is as follows:
 1. Select the PDF file

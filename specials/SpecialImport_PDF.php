@@ -17,7 +17,7 @@ class SpecialImport_PDF extends SpecialPage
 	{
 		$this->session = null;
 
-		parent::__construct('import_PDF', 'edit');
+		parent::__construct('ImportPDF', 'edit');
 	}
 
 	/**
@@ -30,7 +30,7 @@ class SpecialImport_PDF extends SpecialPage
 		$this->checkPermissions();
 
 		$out = $this->getOutput();
-		$out->setPageTitle($this->msg('special-importPDF-title'));
+		$out->setPageTitle($this->msg('special-importPDF-title')->text());
 		//		$out->addHelpLink( 'How to become a MediaWiki hacker' );
 		//		$out->addWikiMsg( 'special-importPDF-intro' );
 
@@ -627,7 +627,7 @@ HTML;
 		if (!empty($sub))
 			$sub = '/' . $sub;
 
-		return str_replace('$1', 'Special:Import_PDF' . $sub, $GLOBALS['wgArticlePath']);
+		return str_replace('$1', 'Special:ImportPDF' . $sub, $GLOBALS['wgArticlePath']);
 	}
 
 	private function getSessionData($key)

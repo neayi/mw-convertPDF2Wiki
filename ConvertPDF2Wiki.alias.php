@@ -8,5 +8,5 @@ $specialPageAliases = array();
 
 /** English (English) */
 $specialPageAliases['en'] = array(
-	'import PDF' => array( 'import PDF' ),
+	'ImportPDF' => array( 'ImportPDF', 'Import PDF' ),
 );

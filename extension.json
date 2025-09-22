@@ -18,7 +18,7 @@
         "RotateImageFromPDF": "src/RotateImageFromPDF.php"
     },
     "SpecialPages": {
-        "Import_PDF": "SpecialImport_PDF"
+        "ImportPDF": "SpecialImport_PDF"
     },
     "ExtensionMessagesFiles": {
         "ConvertPDF2WikiAlias": "ConvertPDF2Wiki.alias.php"
