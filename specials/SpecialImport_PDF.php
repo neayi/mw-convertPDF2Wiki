@@ -187,15 +187,21 @@ HTML;
 			// DO NOT TRUST $_FILES['PDFFile']['mime'] VALUE !!
 			// Check MIME Type by yourself.
 			$finfo = new finfo(FILEINFO_MIME_TYPE);
-			if (false === $ext = array_search(
-				$finfo->file($_FILES['PDFFile']['tmp_name']),
+			$mimeType = $finfo->file($_FILES['PDFFile']['tmp_name']);
+			$ext = array_search(
+				$mimeType,
 				array(
 					'pdf' => 'application/pdf',
+					'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 				),
 				true
-			)) {
-				throw new RuntimeException('Invalid file format.');
+			);
+			if (false === $ext) {
+				throw new RuntimeException('Invalid file format. Only PDF and DOCX files are accepted.');
 			}
+			
+			// Store the file type for later processing
+			$this->setSessionData('ConvertPDF_fileType', $ext);
 	
 			// You should name it uniquely.
 			// DO NOT USE $_FILES['PDFFile']['name'] WITHOUT ANY VALIDATION !!
@@ -354,37 +360,84 @@ HTML;
 		$output = '';
 		$result_code = 0;
 		$tempRootFilename = $this->getSessionData('ConvertPDF_tempRootFilename');
+		$tempDir = dirname($tempRootFilename);
+		$fileType = $this->getSessionData('ConvertPDF_fileType');
 
-		// Convert from PDF to HTML
-		$command = "pdftohtml -s -p -noframes -nodrm \"$tempRootFilename\" \"$tempRootFilename\"";
+		// If the file is already a DOCX, use it directly
+		if ($fileType === 'docx') {
+			$docxFilename = $tempRootFilename;
+		} else {
+			// Convert from PDF to DOCX using pdf2docx Python library
+			$docxFilename = $tempRootFilename . '.docx';
+			$command = "pdf2docx convert " . escapeshellarg($tempRootFilename) . " " . escapeshellarg($docxFilename) . " 2>&1";
 
-		exec($command, $output, $result_code);
+			exec($command, $output, $result_code);
 
-		if ($result_code)
-			throw new Exception("Failed to execute command: " . $command, $result_code);
+			if ($result_code)
+				throw new RuntimeException("Failed to execute pdf2docx command: " . $command . " - " . implode("\n", $output));
 
-		// Keep the html filename so that we can grab its title later
-		$this->setSessionData('ConvertPDF_htmlFilename', $tempRootFilename . '.html');
+			// Verify that the DOCX file was actually created
+			if (!file_exists($docxFilename) || filesize($docxFilename) == 0) {
+				throw new RuntimeException("PDF to DOCX conversion failed: the output file was not created or is empty. You might want to convert the PDF to docx and then upload it. Command output: " . implode("\n", $output));
+			}
+		}
+
+		// Extract images from the DOCX file by unzipping it
+		$zip = new ZipArchive();
+		$imageMapping = []; // Map original names (media/image1.png) to extracted names
+		if ($zip->open($docxFilename) === TRUE) {
+			// Extract images from word/media/ folder
+			for ($i = 0; $i < $zip->numFiles; $i++) {
+				$filename = $zip->getNameIndex($i);
+				// Check if file is in word/media/ folder
+				if (strpos($filename, 'word/media/') === 0 && !empty(pathinfo($filename, PATHINFO_EXTENSION))) {
+					$imageBasename = basename($filename);
+					$ext = pathinfo($filename, PATHINFO_EXTENSION);
+					// Create a unique name for the extracted image
+					$extractedName = basename($tempRootFilename) . '-' . pathinfo($imageBasename, PATHINFO_FILENAME) . '.' . $ext;
+					$extractPath = $tempDir . '/' . $extractedName;
+					// Extract the image
+					copy("zip://" . $docxFilename . "#" . $filename, $extractPath);
+					// Store mapping: media/image1.png => extractedName
+					$imageMapping['media/' . $imageBasename] = $extractedName;
+				}
+			}
+			$zip->close();
+		}
+
+		// Save the image mapping in session
+		$this->setSessionData('ConvertPDF_imageMapping', $imageMapping);
+
+		// Keep the docx filename for later conversion
+		$this->setSessionData('ConvertPDF_docxFilename', $docxFilename);
 	}
 
 	private function getWikiCode($pageTitle) {
-		$htmlFile = $this->getSessionData('ConvertPDF_htmlFilename');
+		$docxFile = $this->getSessionData('ConvertPDF_docxFilename');
 
-		// Convert from HTML to mediawiki text
-		$command = "pandoc \"$htmlFile\" -f html -t mediawiki -s -o \"$htmlFile.wiki\"";
+		// Convert from DOCX to mediawiki text
+		$command = "pandoc \"$docxFile\" -f docx -t mediawiki -s -o \"$docxFile.wiki\"";
 
 		exec($command, $output, $result_code);
 		if ($result_code)
 			throw new Exception("Failed to execute command: " . $command, $result_code);
 	
-		$wikiCode = file_get_contents($htmlFile . ".wiki");
+		$wikiCode = file_get_contents($docxFile . ".wiki");
 	
-		// Replace all div tags and all empty span pairs
-		$wikiCode = preg_replace("@</?div[^>]*>@", '', $wikiCode);
-		$wikiCode = preg_replace("@<span[^>]*></span>@", '', $wikiCode);
-		
+		// Replace all <blockquote> tags
+		$wikiCode = preg_replace("@</?blockquote>@", '', $wikiCode);
+				
 		// Replace non breakable spaces (&nbsp;) that might have been added abusively:
-		$wikiCode = str_replace(" ", ' ', $wikiCode);
+		$wikiCode = str_replace(" ", ' ', $wikiCode);
+
+		// Replace image references using the mapping (media/image1.png => extractedName)
+		$imageMapping = $this->getSessionData('ConvertPDF_imageMapping');
+		if (!empty($imageMapping)) {
+			foreach ($imageMapping as $originalName => $extractedName) {
+				// Replace references like [[File:media/image4.png|...]] with [[File:extractedName|...]]
+				$wikiCode = str_replace('File:' . $originalName, 'File:' . $extractedName, $wikiCode);
+			}
+		}
 
 		// Deal with images:
 		// [[File:a5bf01512354aeb5b8b7cfc0aec0e86e95145e7d002.png|892x1262px|background image]]
@@ -398,10 +451,10 @@ HTML;
 
 			$imagesToUpload[$newImageName] = $imageFile;
 
-			$wikiCode = str_replace($imageFile, $newImageName, $wikiCode);
-
-			// Also add the image at the bottom, just in case :
-			$wikiCode .= "\n[[File:$newImageName]]\n";
+			if (strpos($wikiCode, $imageFile) !== false)
+				$wikiCode = str_replace($imageFile, $newImageName, $wikiCode);
+			else 
+				$wikiCode .= "\n[[File:$newImageName]]\n";
 		}
 		
 		// Remove image tags that are associated with images we didn't keep
@@ -472,7 +525,9 @@ HTML;
 		$this->session->remove('ConvertPDF_form_token');
 		$this->session->remove('ConvertPDF_form_tokenChoose_title');
 		$this->session->remove('ConvertPDF_form_tokenConfirm');
-		$this->session->remove('ConvertPDF_htmlFilename');
+		$this->session->remove('ConvertPDF_docxFilename');
+		$this->session->remove('ConvertPDF_fileType');
+		$this->session->remove('ConvertPDF_imageMapping');
 		$this->session->remove('ConvertPDF_imagesToChooseFrom');
 		$this->session->remove('ConvertPDF_imagesToKeep');
 		$this->session->remove('ConvertPDF_imagesToRemove');
@@ -489,15 +544,25 @@ HTML;
 		if (!empty($documentTitle))
 			return $documentTitle;
 
-		$dom = new DOMDocument();
-		libxml_use_internal_errors(true);
-		$htmlFileName = $this->getSessionData('ConvertPDF_htmlFilename');
-		$dom->loadHTMLFile($htmlFileName);
-		$titleNodes = $dom->getElementsByTagName('title');
-		
-		foreach ($titleNodes as $title) {
-			$documentTitle = $title->nodeValue;
-			break;
+		// Try to extract title from DOCX file metadata
+		$docxFileName = $this->getSessionData('ConvertPDF_docxFilename');
+		if (!empty($docxFileName) && file_exists($docxFileName)) {
+			$zip = new ZipArchive();
+			if ($zip->open($docxFileName) === TRUE) {
+				// Read core.xml which contains document properties
+				$coreXml = $zip->getFromName('docProps/core.xml');
+				if ($coreXml !== false) {
+					$xml = simplexml_load_string($coreXml);
+					if ($xml !== false) {
+						$xml->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+						$titleNodes = $xml->xpath('//dc:title');
+						if (!empty($titleNodes) && !empty((string)$titleNodes[0])) {
+							$documentTitle = (string)$titleNodes[0];
+						}
+					}
+				}
+				$zip->close();
+			}
 		}
 
 		if (empty($documentTitle)) {
