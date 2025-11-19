@@ -184,11 +184,6 @@ HTML;
 					throw new RuntimeException('Unknown errors.');
 			}
 	
-			// You should also check filesize here. 
-			if ($_FILES['PDFFile']['size'] > 1000000) {
-				throw new RuntimeException('Exceeded filesize limit.');
-			}
-	
 			// DO NOT TRUST $_FILES['PDFFile']['mime'] VALUE !!
 			// Check MIME Type by yourself.
 			$finfo = new finfo(FILEINFO_MIME_TYPE);
