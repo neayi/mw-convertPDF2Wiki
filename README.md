@@ -29,12 +29,12 @@ To install:
 ```
 pecl  install  imagick
 ```
-## pdftohtml 
-PDFtoHTML is used to convert the PDF to an HTML document. See : http://poppler.freedesktop.org
+## pdf2docx 
+pdf2docx is used to convert the PDF to a DOCX document (more robust than HTML). See : https://github.com/ArtifexSoftware/pdf2docx
 
 To install: 
 ```
-apt-get install poppler-utils
+pip install pdf2docx
 ```
 ## Pandoc
 Pandoc is used to convert from HTML to Wikitext : https://pandoc.org/installing.html
